@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeamTask Pro - Task Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div id="app" class="min-h-screen">
+        <!-- Login Screen -->
+        <div id="loginScreen" class="flex items-center justify-center min-h-screen px-4">
+            <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md fade-in">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">TeamTask Pro</h1>
+                    <p class="text-gray-600">Secure task management for remote teams</p>
+                </div>
+                <form id="loginForm" class="space-y-6">
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                        <input type="text" id="username" name="username" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Enter your username">
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                        <input type="password" id="password" name="password" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Enter your password">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 flex items-center justify-center">
+                        <span id="loginText">Sign In</span>
+                        <i id="loginSpinner" class="fas fa-spinner fa-spin ml-2 hidden"></i>
+                    </button>
+                </form>
+                <div class="mt-6 text-center">
+                    <button id="showRegisterBtn" class="text-blue-600 hover:text-blue-500 text-sm">
+                        Create new account
+                    </button>
+                </div>
+                <div class="mt-4 text-center">
+                    <p class="text-xs text-gray-500">Demo: alice/alice123, bob/bob123, charlie/charlie123</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Register Modal -->
+        <div id="registerModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 fade-in">
+                <h3 class="text-xl font-bold mb-4">Create Account</h3>
+                <form id="registerForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                        <input type="text" id="newUsername" placeholder="Choose username" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                        <input type="password" id="newPassword" placeholder="Create password" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                        <input type="password" id="confirmPassword" placeholder="Confirm password" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div class="flex space-x-4">
+                        <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200">
+                            Register
+                        </button>
+                        <button type="button" id="cancelRegister" class="flex-1 bg-gray-300 py-2 rounded-md hover:bg-gray-400 transition duration-200">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main App -->
+        <div id="mainApp" class="hidden min-h-screen">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center h-16">
+                        <div class="flex items-center">
+                            <h1 class="text-2xl font-bold text-gray-900">TeamTask Pro</h1>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span id="currentUser" class="text-gray-700 font-medium"></span>
+                            <button id="logoutBtn" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition duration-200">
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Navigation -->
+            <nav class="bg-white border-b border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex space-x-8">
+                        <button id="dashboardTab" class="tab-btn border-b-2 border-blue-500 text-blue-600 py-4 px-1 font-medium">
+                            <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                        </button>
+                        <button id="createTaskTab" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 font-medium">
+                            <i class="fas fa-plus-circle mr-2"></i>Create Task
+                        </button>
+                        <button id="allTasksTab" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 font-medium">
+                            <i class="fas fa-tasks mr-2"></i>All Tasks
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Content Area -->
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Dashboard View -->
+                <div id="dashboardView" class="tab-content">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">My Dashboard</h2>
+                        <p class="text-gray-600">Tasks assigned to you</p>
+                    </div>
+                    
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+                            <div class="flex items-center">
+                                <div class="bg-blue-100 p-3 rounded-full">
+                                    <i class="fas fa-tasks text-blue-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-600">Total Tasks</p>
+                                    <p id="totalTasksCount" class="text-2xl font-bold text-gray-900">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+                            <div class="flex items-center">
+                                <div class="bg-yellow-100 p-3 rounded-full">
+                                    <i class="fas fa-clock text-yellow-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-600">Pending</p>
+                                    <p id="pendingTasksCount" class="text-2xl font-bold text-gray-900">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+                            <div class="flex items-center">
+                                <div class="bg-green-100 p-3 rounded-full">
+                                    <i class="fas fa-check-circle text-green-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-600">Completed</p>
+                                    <p id="completedTasksCount" class="text-2xl font-bold text-gray-900">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="myTasks" class="space-y-4">
+                        <!-- Tasks will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Create Task View -->
+                <div id="createTaskView" class="tab-content hidden">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2" id="createTaskTitle">Create New Task</h2>
+                        <p class="text-gray-600" id="createTaskSubtitle">Add a new task for your team</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <form id="createTaskForm" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="taskTitle" class="block text-sm font-medium text-gray-700 mb-2">Task Title *</label>
+                                    <input type="text" id="taskTitle" name="taskTitle" required 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                           placeholder="Enter task title">
+                                </div>
+                                <div>
+                                    <label for="dueDate" class="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                                    <input type="date" id="dueDate" name="dueDate" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="taskDescription" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                <textarea id="taskDescription" name="taskDescription" rows="3" 
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                          placeholder="Enter task description"></textarea>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="assignTo" class="block text-sm font-medium text-gray-700 mb-2">Assign To *</label>
+                                    <select id="assignTo" name="assignTo" required 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="">Select team member</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="priority" class="block text-sm font-medium text-gray-700 mb-2">Priority *</label>
+                                    <select id="priority" name="priority" required 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="low">Low</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="flex space-x-4 pt-4">
+                                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200">
+                                    <i class="fas fa-plus-circle mr-2"></i>
+                                    <span id="submitButtonText">Create Task</span>
+                                </button>
+                                <button type="button" id="cancelEdit" class="bg-gray-300 text-gray-700 py-2 px-6 rounded-md hover:bg-gray-400 transition duration-200 hidden">
+                                    Cancel Edit
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- All Tasks View -->
+                <div id="allTasksView" class="tab-content hidden">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">All Tasks</h2>
+                        <p class="text-gray-600">Complete overview of team tasks</p>
+                    </div>
+                    
+                    <!-- Search and Filter -->
+                    <div class="bg-white rounded-lg shadow p-6 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="md:col-span-2">
+                                <input type="text" id="taskSearch" placeholder="Search tasks..." 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="all">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                            <div>
+                                <select id="userFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="all">All Users</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="allTasks" class="space-y-4">
+                        <!-- Tasks will be populated here -->
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced App State with Local Storage
+        let currentUser = null;
+        let tasks = JSON.parse(localStorage.getItem('teamTasks')) || [
+            {
+                id: 1,
+                title: "Design new landing page",
+                description: "Create mockups for the new product landing page",
+                assignedTo: "alice",
+                createdBy: "bob",
+                priority: "high",
+                status: "pending",
+                dueDate: "2024-02-15",
+                createdAt: new Date('2024-01-15').toISOString(),
+                comments: []
+            },
+            {
+                id: 2,
+                title: "Review API documentation",
+                description: "Go through the new API docs and provide feedback",
+                assignedTo: "bob",
+                createdBy: "alice",
+                priority: "medium",
+                status: "pending",
+                dueDate: "2024-02-10",
+                createdAt: new Date('2024-01-16').toISOString(),
+                comments: []
+            },
+            {
+                id: 3,
+                title: "Update user guide",
+                description: "Add new features to the user documentation",
+                assignedTo: "charlie",
+                createdBy: "alice",
+                priority: "low",
+                status: "completed",
+                dueDate: "2024-01-30",
+                createdAt: new Date('2024-01-14').toISOString(),
+                comments: []
+            }
+        ];
+
+        // Enhanced User System with Passwords
+        let users = JSON.parse(localStorage.getItem('teamTaskUsers')) || {
+            alice: { password: "alice123", name: "Alice" },
+            bob: { password: "bob123", name: "Bob" },
+            charlie: { password: "charlie123", name: "Charlie" }
+        };
+
+        // Utility Functions
+        function saveTasksToStorage() {
+            localStorage.setItem('teamTasks', JSON.stringify(tasks));
+        }
+
+        function saveUsersToStorage() {
+            localStorage.setItem('teamTaskUsers', JSON.stringify(users));
+        }
+
+        function getNextTaskId() {
+            const maxId = tasks.reduce((max, task) => Math.max(max, task.id), 0);
+            return maxId + 1;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'No due date';
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString(undefined, options);
+        }
+
+        function isOverdue(dueDate) {
+            if (!dueDate) return false;
+            return new Date(dueDate) < new Date().setHours(0,0,0,0);
+        }
+
+        // DOM Elements
+        const loginScreen = document.getElementById('loginScreen');
+        const mainApp = document.getElementById('mainApp');
+        const loginForm = document.getElementById('loginForm');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const currentUserSpan = document.getElementById('currentUser');
+        const createTaskForm = document.getElementById('createTaskForm');
+        const registerModal = document.getElementById('registerModal');
+        const registerForm = document.getElementById('registerForm');
+        const showRegisterBtn = document.getElementById('showRegisterBtn');
+        const cancelRegister = document.getElementById('cancelRegister');
+        const cancelEdit = document.getElementById('cancelEdit');
+
+        // Initialize app
+        function init() {
+            setupEventListeners();
+            populateUserFilters();
+            showLogin();
+        }
+
+        function setupEventListeners() {
+            loginForm.addEventListener('submit', handleLogin);
+            logoutBtn.addEventListener('click', handleLogout);
+            createTaskForm.addEventListener('submit', handleCreateTask);
+            registerForm.addEventListener('submit', handleRegister);
+            showRegisterBtn.addEventListener('click', () => showModal(true));
+            cancelRegister.addEventListener('click', () => showModal(false));
+            cancelEdit.addEventListener('click', cancelTaskEdit);
+            
+            // Tab navigation
+            document.getElementById('dashboardTab').addEventListener('click', () => showTab('dashboard'));
+            document.getElementById('createTaskTab').addEventListener('click', () => showTab('createTask'));
+            document.getElementById('allTasksTab').addEventListener('click', () => showTab('allTasks'));
+            
+            // Search and filter
+            document.getElementById('taskSearch').addEventListener('input', renderTasks);
+            document.getElementById('statusFilter').addEventListener('change', renderTasks);
+            document.getElementById('userFilter').addEventListener('change', renderTasks);
+        }
+
+        function populateUserFilters() {
+            const assignToSelect = document.getElementById('assignTo');
+            const userFilterSelect = document.getElementById('userFilter');
+            
+            // Clear existing options except first
+            assignToSelect.innerHTML = '<option value="">Select team member</option>';
+            userFilterSelect.innerHTML = '<option value="all">All Users</option>';
+            
+            // Add users
+            Object.keys(users).forEach(username => {
+                const displayName = users[username].name || username;
+                assignToSelect.innerHTML += `<option value="${username}">${displayName}</option>`;
+                userFilterSelect.innerHTML += `<option value="${username}">${displayName}</option>`;
+            });
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value.toLowerCase();
+            const password = document.getElementById('password').value;
+            
+            // Show loading state
+            const loginText = document.getElementById('loginText');
+            const loginSpinner = document.getElementById('loginSpinner');
+            loginText.textContent = 'Signing In...';
+            loginSpinner.classList.remove('hidden');
+            loginForm.classList.add('loading');
+            
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            if (users[username] && users[username].password === password) {
+                currentUser = username;
+                showMainApp();
+                showNotification(`Welcome back, ${users[username].name || username}!`, 'success');
+            } else {
+                showNotification('Invalid username or password', 'error');
+            }
+            
+            // Reset loading state
+            loginText.textContent = 'Sign In';
+            loginSpinner.classList.add('hidden');
+            loginForm.classList.remove('loading');
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            const username = document.getElementById('newUsername').value.toLowerCase();
+            const password = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (users[username]) {
+                showNotification('Username already exists', 'error');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showNotification('Passwords do not match', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showNotification('Password must be at least 6 characters', 'error');
+                return;
+            }
+            
+            users[username] = { password: password, name: username };
+            saveUsersToStorage();
+            populateUserFilters();
+            showModal(false);
+            showNotification('Account created successfully! Please login.', 'success');
+            
+            // Clear form
+            registerForm.reset();
+        }
+
+        function handleCreateTask(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const isEditing = createTaskForm.dataset.editing;
+            
+            if (isEditing) {
+                // Update existing task
+                const taskId = parseInt(isEditing);
+                const taskIndex = tasks.findIndex(t => t.id === taskId);
+                
+                if (taskIndex !== -1) {
+                    tasks[taskIndex] = {
+                        ...tasks[taskIndex],
+                        title: formData.get('taskTitle'),
+                        description: formData.get('taskDescription'),
+                        assignedTo: formData.get('assignTo'),
+                        priority: formData.get('priority'),
+                        dueDate: formData.get('dueDate')
+                    };
+                    
+                    saveTasksToStorage();
+                    showNotification('Task updated successfully!', 'success');
+                    cancelTaskEdit();
+                }
+            } else {
+                // Create new task
+                const newTask = {
+                    id: getNextTaskId(),
+                    title: formData.get('taskTitle'),
+                    description: formData.get('taskDescription'),
+                    assignedTo: formData.get('assignTo'),
+                    createdBy: currentUser,
+                    priority: formData.get('priority'),
+                    dueDate: formData.get('dueDate'),
+                    status: 'pending',
+                    createdAt: new Date().toISOString(),
+                    comments: []
+                };
+                
+                tasks.push(newTask);
+                saveTasksToStorage();
+                e.target.reset();
+                showNotification('Task created successfully!', 'success');
+            }
+            
+            renderTasks();
+        }
+
+        function editTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                // Populate form with task data
+                document.getElementById('taskTitle').value = task.title;
+                document.getElementById('taskDescription').value = task.description;
+                document.getElementById('assignTo').value = task.assignedTo;
+                document.getElementById('priority').value = task.priority;
+                document.getElementById('dueDate').value = task.dueDate || '';
+                
+                // Change to edit mode
+                createTaskForm.dataset.editing = taskId;
+                document.getElementById('createTaskTitle').textContent = 'Edit Task';
+                document.getElementById('createTaskSubtitle').textContent = 'Update task details';
+                document.getElementById('submitButtonText').textContent = 'Update Task';
+                cancelEdit.classList.remove('hidden');
+                
+                showTab('createTask');
+            }
+        }
+
+        function cancelTaskEdit() {
+            delete createTaskForm.dataset.editing;
+            document.getElementById('createTaskTitle').textContent = 'Create New Task';
+            document.getElementById('createTaskSubtitle').textContent = 'Add a new task for your team';
+            document.getElementById('submitButtonText').textContent = 'Create Task';
+            cancelEdit.classList.add('hidden');
+            createTaskForm.reset();
+        }
+
+        function deleteTask(taskId) {
+            if (confirm('Are you sure you want to delete this task?')) {
+                tasks = tasks.filter(t => t.id !== taskId);
+                saveTasksToStorage();
+                renderTasks();
+                showNotification('Task deleted successfully!', 'success');
+            }
+        }
+
+        function showLogin() {
+            loginScreen.classList.remove('hidden');
+            mainApp.classList.add('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        function showMainApp() {
+            loginScreen.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+            const displayName = users[currentUser]?.name || currentUser;
+            currentUserSpan.textContent = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+            showTab('dashboard');
+            updateStats();
+        }
+
+        function showModal(show) {
+            registerModal.classList.toggle('hidden', !show);
+            if (!show) {
+                registerForm.reset();
+            }
+        }
+
+        function showTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+            
+            // Show selected tab
+            document.getElementById(`${tabName}Tab`).classList.remove('border-transparent', 'text-gray-500');
+            document.getElementById(`${tabName}Tab`).classList.add('border-blue-500', 'text-blue-600');
+            document.getElementById(`${tabName}View`).classList.remove('hidden');
+            
+            // Render tasks for relevant tabs
+            if (tabName === 'dashboard' || tabName === 'allTasks') {
+                renderTasks();
+            }
+            
+            if (tabName === 'dashboard') {
+                updateStats();
+            }
+        }
+
+        function updateStats() {
+            const myTasks = tasks.filter(task => task.assignedTo === currentUser);
+            const totalTasks = myTasks.length;
+            const pendingTasks = myTasks.filter(task => task.status === 'pending').length;
+            const completedTasks = myTasks.filter(task => task.status === 'completed').length;
+            
+            document.getElementById('totalTasksCount').textContent = totalTasks;
+            document.getElementById('pendingTasksCount').textContent = pendingTasks;
+            document.getElementById('completedTasksCount').textContent = completedTasks;
+        }
+
+        function renderTasks() {
+            const myTasksContainer = document.getElementById('myTasks');
+            const allTasksContainer = document.getElementById('allTasks');
+            
+            // Get filter values
+            const searchTerm = document.getElementById('taskSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const userFilter = document.getElementById('userFilter').value;
+            
+            // Filter tasks for current user (dashboard)
+            let myTasks = tasks.filter(task => task.assignedTo === currentUser);
+            
+            // Filter all tasks with search and filters
+            let filteredTasks = tasks.filter(task => {
+                const matchesSearch = task.title.toLowerCase().includes(searchTerm) || 
+                                    task.description.toLowerCase().includes(searchTerm);
+                const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
+                const matchesUser = userFilter === 'all' || task.assignedTo === userFilter;
+                
+                return matchesSearch && matchesStatus && matchesUser;
+            });
+            
+            // Render my tasks
+            myTasksContainer.innerHTML = myTasks.length === 0 ? 
+                '<div class="text-center py-12"><i class="fas fa-tasks text-4xl text-gray-300 mb-4"></i><p class="text-gray-500">No tasks assigned to you yet.</p></div>' :
+                myTasks.map(task => createTaskCard(task, true)).join('');
+            
+            // Render all tasks
+            allTasksContainer.innerHTML = filteredTasks.length === 0 ? 
+                '<div class="text-center py-12"><i class="fas fa-search text-4xl text-gray-300 mb-4"></i><p class="text-gray-500">No tasks match your filters.</p></div>' :
+                filteredTasks.map(task => createTaskCard(task, false)).join('');
+        }
+
+        function createTaskCard(task, showCompleteBtn) {
+            const priorityColors = {
+                low: 'bg-green-100 text-green-800',
+                medium: 'bg-yellow-100 text-yellow-800',
+                high: 'bg-red-100 text-red-800'
+            };
+            
+            const statusColors = {
+                pending: 'bg-blue-100 text-blue-800',
+                completed: 'bg-green-100 text-green-800'
+            };
+            
+            const isOverdueTask = task.dueDate && isOverdue(task.dueDate) && task.status === 'pending';
+            const displayName = users[task.assignedTo]?.name || task.assignedTo;
+            const createdByName = users[task.createdBy]?.name || task.createdBy;
+            
+            return `
+                <div class="bg-white rounded-lg shadow p-6 border-l-4 ${task.status === 'completed' ? 'border-green-500' : isOverdueTask ? 'border-red-500' : 'border-blue-500'} fade-in">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-gray-900 ${task.status === 'completed' ? 'line-through' : ''}">${task.title}</h3>
+                            ${task.dueDate ? `
+                                <p class="text-sm mt-1 ${isOverdueTask ? 'text-red-600 font-medium' : 'text-gray-500'}">
+                                    <i class="fas fa-calendar ${isOverdueTask ? 'text-red-500' : 'text-gray-400'} mr-1"></i>
+                                    Due: ${formatDate(task.dueDate)}
+                                    ${isOverdueTask ? ' (Overdue)' : ''}
+                                </p>
+                            ` : ''}
+                        </div>
+                        <div class="flex space-x-2">
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${priorityColors[task.priority]}">
+                                ${task.priority.toUpperCase()}
+                            </span>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${statusColors[task.status]}">
+                                ${task.status.toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 mb-4">${task.description}</p>
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-500">
+                            <p>Assigned to: <span class="font-medium">${displayName.charAt(0).toUpperCase() + displayName.slice(1)}</span></p>
+                            <p>Created by: <span class="font-medium">${createdByName.charAt(0).toUpperCase() + createdByName.slice(1)}</span></p>
+                            <p class="text-xs mt-1">Created: ${formatDate(task.createdAt)}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            ${showCompleteBtn && task.status === 'pending' ? 
+                                `<button onclick="completeTask(${task.id})" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200">
+                                    <i class="fas fa-check mr-1"></i>Complete
+                                </button>` : ''
+                            }
+                            ${task.createdBy === currentUser ? `
+                                <button onclick="editTask(${task.id})" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200">
+                                    <i class="fas fa-edit mr-1"></i>Edit
+                                </button>
+                                <button onclick="deleteTask(${task.id})" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition duration-200">
+                                    <i class="fas fa-trash mr-1"></i>Delete
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function completeTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.status = 'completed';
+                saveTasksToStorage();
+                renderTasks();
+                updateStats();
+                showNotification('Task marked as complete!', 'success');
+            }
+        }
+
+        function showNotification(message, type) {
+            // Remove existing notifications
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-md shadow-lg z-50 notification fade-in ${
+                type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} mr-2"></i>
+                    ${message}
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize the app
+        init();
+    </script>
+</body>
+</html>

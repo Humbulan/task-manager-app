@@ -1,0 +1,11 @@
+[build]
+  publish = "."
+  command = "echo 'No build step needed for static HTML app'"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[functions]
+  directory = "functions"
